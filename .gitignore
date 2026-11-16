@@ -1,0 +1,10 @@
+# Collected data never goes in the repository: it is large and is re-collected by the pipeline.
+/data/
+*.jsonl
+
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.DS_Store

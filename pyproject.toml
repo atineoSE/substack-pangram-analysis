@@ -1,0 +1,30 @@
+[project]
+name = "substack-pangram-analysis"
+version = "0.1.0"
+description = "Measure AI-written text on Substack with Substack's own Pangram detector"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = ["requests>=2.32"]
+
+[project.scripts]
+substack-pangram = "substack_pangram.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.9"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/substack_pangram"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
