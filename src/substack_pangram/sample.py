@@ -15,9 +15,11 @@ period, its lower edge ``draft_lag`` IDs below the median ID published on the
 period's first day, so drafts started before the period but published in it are
 still in range.
 
-Both frames are merged on post ID -- a post drawn by both is scanned once and
-counts in both -- and the worklist is shuffled, so any prefix of it is a
-uniform slice of the whole and a scan stopped early is still analysable.
+Both frames are merged on post ID, so a post drawn by both is scanned once. The
+random frame still draws from all of Substack; ``report`` then sets aside its
+posts from ranked publications by default. The worklist is shuffled, so any
+prefix of it is a uniform slice of the whole and a scan stopped early is still
+analysable.
 """
 
 import json

@@ -20,7 +20,7 @@ The study draws two independent samples of posts published in one period:
 | Frame | What it stands for | How it is drawn |
 |---|---|---|
 | **Ranked** | The visible part of Substack: the top publications of each category | Every post each ranked publication published in the period is listed (the *census*). A share of each publication's posts is drawn at random. |
-| **Random** | Substack as a whole, including publications nobody reads | Post IDs drawn uniformly from the ID range covering the period. Each is then dated and kept only if it was published in the period. |
+| **Random** | The rest of Substack, including publications nobody reads | Post IDs drawn uniformly from the ID range covering the period. Each is then dated and kept only if it was published in the period, and not by a ranked publication. |
 
 ## Requirements
 
@@ -59,6 +59,7 @@ uv run substack-pangram date
 # 6. The result tables, as Markdown
 uv run substack-pangram report                       # each post counts once
 uv run substack-pangram report --weight publication  # each publication counts once
+uv run substack-pangram report --include-ranked      # random frame = all of Substack
 ```
 
 `--start` (default: the detection start) and `--end` set the period on the
@@ -96,7 +97,9 @@ Try it small first: `rankings --depth 5`, `census --limit 20`,
 The report's definitions:
 - **Eligible** = `scored`, `disabled` or `paid`.
 - **AI share** = `fraction_ai + fraction_ai_assisted`.
-- A post drawn by both frames counts in both.
+- The random frame leaves out posts from ranked publications, so it stands for
+  the rest of Substack and the two frames don't overlap. `--include-ranked`
+  keeps them, making the random frame a sample of all of Substack.
 - Every interval is a 95% interval clustered by publication.
 
 ## Endpoints

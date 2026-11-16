@@ -54,6 +54,11 @@ def main() -> None:
 
     p = sub.add_parser("report", help="Print the result tables as Markdown")
     p.add_argument("--weight", choices=("post", "publication"), default="post")
+    p.add_argument(
+        "--include-ranked",
+        action="store_true",
+        help="Keep random-frame posts from ranked publications (default: set aside, so random = the rest of Substack)",
+    )
 
     args = parser.parse_args()
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO, format="%(message)s")
@@ -80,7 +85,7 @@ def main() -> None:
     elif args.step == "date":
         run_dating(data, args.limit)
     elif args.step == "report":
-        print(render(data, args.weight))
+        print(render(data, args.weight, args.include_ranked))
 
 
 def _census_period(data: DataDir, start: str | None, end: str | None) -> Period:

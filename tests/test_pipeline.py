@@ -271,3 +271,21 @@ def test_a_census_rerun_reuses_the_saved_period_and_refuses_a_different_one(data
     assert _census_period(data, None, None) == PERIOD
     with pytest.raises(SystemExit):
         _census_period(data, None, "2026-12-01T00:00:00+00:00")
+
+
+def test_the_random_frame_sets_aside_ranked_publications_by_default(data):
+    data.write_period(PERIOD)
+    store.write(
+        data.publications_file,
+        [{"publication_id": 1, "name": "A", "domain": "a.com", "category": "News", "rank": 0, "language": "en"}],
+    )
+    store.write(data.scans_file, [_scan_row(1, ["random"], 1.0, 1), _scan_row(2, ["random"], 0.0, 2)])
+    inside = "2026-08-01T00:00:00Z"
+    store.write(data.dates_file, [{"post_id": i, "http_status": 200, "post_date": inside} for i in (1, 2)])
+
+    default = report.scored(report.load_posts(data, PERIOD), "random")
+    everything = report.scored(report.load_posts(data, PERIOD, include_ranked=True), "random")
+
+    assert [p.post_id for p in default] == [2]
+    assert sorted(p.post_id for p in everything) == [1, 2]
+    assert "set aside" in report.render(data)

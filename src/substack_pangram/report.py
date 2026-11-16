@@ -5,8 +5,10 @@ Definitions:
 * **Eligible**: ``scored``, ``disabled`` or ``paid`` -- a real post in the period
   that the detector could have scored. Every other outcome is excluded, not missing.
 * **AI share** of a scored post: ``fraction_ai + fraction_ai_assisted``.
-* A post drawn by both frames counts in both.
 * A random-frame post counts only once ``date`` places it inside the period.
+* The random frame stands for **the rest of Substack**: a random post from a
+  ranked publication is set aside (``--include-ranked`` keeps it), so the two
+  frames do not overlap and compare the ranked part with everything else.
 
 Every interval is a 95% interval **clustered by publication**: AI use is close
 to constant within a publication, so a publication's posts are not independent
@@ -48,9 +50,12 @@ class Post:
     language: str | None
     wordcount: int | None
     inside: bool | None  # random frame: dated inside the period; ranked frame: always True
+    # Set aside from the random frame: its publication is ranked (unless --include-ranked).
+    ranked_publication: bool = False
 
 
-def load_posts(data: DataDir, period: Period) -> list[Post]:
+def load_posts(data: DataDir, period: Period, include_ranked: bool = False) -> list[Post]:
+    ranked_ids = set() if include_ranked else {row["publication_id"] for row in store.read(data.publications_file)}
     worklist = {e["post_id"]: e for e in store.read(data.worklist_file)}
     dates = store.latest_by_post(store.read(data.dates_file))
     posts = []
@@ -74,13 +79,16 @@ def load_posts(data: DataDir, period: Period) -> list[Post]:
                 language=language.split("-")[0].lower() if isinstance(language, str) else None,
                 wordcount=entry.get("wordcount") or dated.get("wordcount"),
                 inside=True if "ranked" in row["frames"] else period.contains(dated.get("post_date")),
+                ranked_publication=publication is not None and int(publication) in ranked_ids,
             )
         )
     return posts
 
 
 def counts_toward(post: Post, frame: str) -> bool:
-    return frame in post.frames and (frame == "ranked" or post.inside is True)
+    if frame not in post.frames:
+        return False
+    return frame == "ranked" or (post.inside is True and not post.ranked_publication)
 
 
 Weigher = Callable[[list[Post]], list[float]]
@@ -138,6 +146,12 @@ def _sample_section(posts: list[Post]) -> str:
         f"Random frame: of {len(live):,} posts that exist, {where['inside']:,} are inside the period, "
         f"{where['outside']:,} outside it and {where['undated']:,} undated. Only those inside count below.",
     ]
+    set_aside = sum(1 for p in live if p.inside and p.ranked_publication)
+    if set_aside:
+        rows.append(
+            f"{set_aside:,} of those inside are from ranked publications and are set aside, so the random frame "
+            "stands for the rest of Substack (`--include-ranked` keeps them)."
+        )
     return "\n".join(rows)
 
 
@@ -229,9 +243,9 @@ def _opt_out_section(posts: list[Post], weigh: Weigher) -> str:
     return "\n".join(rows)
 
 
-def render(data: DataDir, weight: str = "post") -> str:
+def render(data: DataDir, weight: str = "post", include_ranked: bool = False) -> str:
     period = data.read_period()
-    posts = load_posts(data, period)
+    posts = load_posts(data, period, include_ranked)
     weigh: Weigher = per_publication if weight == "publication" else per_post
     header = [
         "# Substack posts and Pangram's AI detection",
